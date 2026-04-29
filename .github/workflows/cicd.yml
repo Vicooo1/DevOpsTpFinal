@@ -1,6 +1,6 @@
 name: CI/CD Pipeline Lacets
 
-# Déclenchement dès que la branche main est modifiée
+# Déclenchement dès que la branche main t modifiée
 on:
   push:
     branches:
