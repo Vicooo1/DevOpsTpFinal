@@ -15,6 +15,28 @@ jobs:
       - name: 📥 Récupérer le code source
         uses: actions/checkout@v4
 
+      - name: 🧰 Vérifier dépendances runner
+        run: |
+          set -e
+          if ! command -v vagrant >/dev/null 2>&1; then
+            echo "Vagrant manquant: tentative d'installation..."
+            sudo apt-get update -y
+            sudo apt-get install -y vagrant
+          fi
+          if ! command -v VBoxManage >/dev/null 2>&1; then
+            echo "VirtualBox manquant sur le runner."
+            echo "Installe VirtualBox + extension pack sur la machine self-hosted, puis relance le job."
+            exit 1
+          fi
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "Docker manquant sur le runner."
+            echo "Installe Docker sur la machine self-hosted, puis relance le job."
+            exit 1
+          fi
+          vagrant --version
+          VBoxManage --version
+          docker --version
+
       - name: 🏗️ Configurer l'infrastructure (k3s + monitoring)
         run: |
           chmod +x prep_infra/deploy_infra.sh prep_infra/generate_inventory.sh
