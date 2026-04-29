@@ -18,7 +18,8 @@ spec:
       containers:
         - name: api-lacets
           # On utilise l'image que tu as buildée et poussée à l'étape précédente
-          image: vicopetit/api-lacets:v1
+          image: vicopetit/api-lacets:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           # Définition des ressources pour que le HPA puisse fonctionner
@@ -33,9 +34,11 @@ spec:
             # Connexion à MySQL en utilisant le nom du service "mysql" défini précédemment
             - name: DB_HOST
               value: "mysql"
-            - name: DB_USER
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USERNAME
               value: "api_user"
-            - name: DB_PASS
+            - name: DB_USERNAME_PASSWORD
               value: "api_password"
             - name: DB_NAME
               value: "lacets_db"

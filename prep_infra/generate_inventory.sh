@@ -1,23 +1,28 @@
 #!/bin/bash
+set -euo pipefail
 
 echo "Récupération de l'adresse IP de la VM..."
 
-# On récupère la deuxième IP (celle du DHCP)
-VM_IP=$(vagrant ssh -c "hostname -I | awk '{print \$2}'" 2>/dev/null | tr -d '\r')
+K3S_IP=$(vagrant ssh k3s -c "hostname -I | awk '{print \$2}'" 2>/dev/null | tr -d '\r')
+MONITORING_IP=$(vagrant ssh monitoring -c "hostname -I | awk '{print \$2}'" 2>/dev/null | tr -d '\r')
 
-if [ -z "$VM_IP" ]; then
+if [ -z "$K3S_IP" ] || [ -z "$MONITORING_IP" ]; then
   echo "Erreur: Impossible de récupérer l'IP. Voici ce que la VM répond :"
-  vagrant ssh -c "hostname -I"
+  vagrant ssh k3s -c "hostname -I" || true
+  vagrant ssh monitoring -c "hostname -I" || true
   exit 1
 fi
 
-echo "L'IP de la VM est : $VM_IP"
+echo "IP k3s: $K3S_IP"
+echo "IP monitoring: $MONITORING_IP"
 echo "Génération de l'inventaire Ansible..."
 
-# On crée l'inventaire avec le bon chemin vers la clé SSH (dossier 'default')
 cat <<EOF > inventory.ini
 [k3s_nodes]
-$VM_IP ansible_user=vagrant ansible_ssh_private_key_file=.vagrant/machines/default/virtualbox/private_key
+$K3S_IP ansible_user=vagrant ansible_ssh_private_key_file=.vagrant/machines/k3s/virtualbox/private_key
+
+[monitoring_nodes]
+$MONITORING_IP ansible_user=vagrant ansible_ssh_private_key_file=.vagrant/machines/monitoring/virtualbox/private_key
 EOF
 
 echo "Le fichier inventory.ini a été généré avec succès !"

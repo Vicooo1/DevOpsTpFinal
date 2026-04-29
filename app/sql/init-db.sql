@@ -1,10 +1,10 @@
-CREATE DATABASE api_example;
+CREATE DATABASE IF NOT EXISTS lacets_db;
 
-USE api_example;
+USE lacets_db;
 
-CREATE TABLE users (
-	id NVARCHAR(255) PRIMARY KEY,
-	first_name NVARCHAR(100) NOT NULL,
-    last_name NVARCHAR(100) NOT NULL,
-    age int NOT NULL 
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(255) PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    age INT NOT NULL
 );

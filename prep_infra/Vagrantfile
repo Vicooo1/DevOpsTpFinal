@@ -1,14 +1,23 @@
 Vagrant.configure("2") do |config|
-  # On utilise une image officielle Debian 12 (Bookworm)
   config.vm.box = "debian/bookworm64"
-  
-  # On configure une carte réseau en DHCP, comme mentionné dans le TP
-  config.vm.network "private_network", type: "dhcp"
 
-  # Configuration spécifique pour VirtualBox
-  config.vm.provider "virtualbox" do |vb|
-    vb.name = "k3s-server"
-    vb.memory = "2048" # Les 2Go de RAM recommandés
-    vb.cpus = 2
+  config.vm.define "k3s" do |k3s|
+    k3s.vm.hostname = "k3s-server"
+    k3s.vm.network "private_network", type: "dhcp"
+    k3s.vm.provider "virtualbox" do |vb|
+      vb.name = "k3s-server"
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+  end
+
+  config.vm.define "monitoring" do |mon|
+    mon.vm.hostname = "monitoring-server"
+    mon.vm.network "private_network", type: "dhcp"
+    mon.vm.provider "virtualbox" do |vb|
+      vb.name = "monitoring-server"
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
   end
 end

@@ -8,28 +8,40 @@ on:
 
 jobs:
   deploy:
-    # On utilise le runner self-hosted que tu viens de configurer
+    # Le runner self-hosted doit avoir VirtualBox, Vagrant et Docker.
     runs-on: self-hosted
 
     steps:
       - name: 📥 Récupérer le code source
         uses: actions/checkout@v4
 
-      - name: 🏗️ Configurer l'infrastructure
+      - name: 🏗️ Configurer l'infrastructure (k3s + monitoring)
         run: |
-          echo "Vérification de l'accès au cluster k3s..."
-          sudo /usr/local/bin/k3s kubectl get nodes
+          chmod +x prep_infra/deploy_infra.sh prep_infra/generate_inventory.sh
+          cd prep_infra
+          ./deploy_infra.sh
+          ./generate_inventory.sh
 
       - name: 📦 Builder l'image
         run: |
           cd app
-          # On build l'image localement sur la VM
-          sudo docker build -t vicopetit/api-lacets:latest .
+          docker build -t vicopetit/api-lacets:latest .
+          docker push vicopetit/api-lacets:latest
 
-      - name: 🚀 Déployer l'image sur l'infrastructure
+      - name: 🚀 Déployer l'application sur k3s
         run: |
-          # On applique les manifests Kubernetes
-          sudo /usr/local/bin/k3s kubectl apply -f k8s/mysql.yaml
-          sudo /usr/local/bin/k3s kubectl apply -f k8s/api.yaml
-          # On force le redémarrage pour que k3s prenne la nouvelle image
-          sudo /usr/local/bin/k3s kubectl rollout restart deployment api-lacets
+          cd prep_infra
+          vagrant ssh k3s -c "cat > /tmp/mysql.yaml" < ../k8s/mysql.yaml
+          vagrant ssh k3s -c "cat > /tmp/api.yaml" < ../k8s/api.yaml
+          vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl apply -f /tmp/mysql.yaml"
+          vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl apply -f /tmp/api.yaml"
+          vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl set image deployment/api-lacets api-lacets=vicopetit/api-lacets:latest"
+          vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl rollout status deployment/mysql --timeout=240s"
+          vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl rollout status deployment/api-lacets --timeout=240s"
+
+      - name: 📈 Vérifier observabilité
+        run: |
+          cd prep_infra
+          MON_IP=$(vagrant ssh monitoring -c "hostname -I | awk '{print \$2}'" 2>/dev/null | tr -d '\r')
+          curl -fsSL "http://$MON_IP:9090/-/ready"
+          curl -fsSL "http://$MON_IP:3001/api/health"
