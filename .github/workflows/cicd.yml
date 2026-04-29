@@ -18,10 +18,41 @@ jobs:
       - name: 🧰 Vérifier dépendances runner
         run: |
           set -e
+          wait_for_apt_lock() {
+            echo "Attente de liberation du lock apt/dpkg..."
+            for i in $(seq 1 60); do
+              if sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+                 sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+                 sudo fuser /var/cache/apt/archives/lock >/dev/null 2>&1; then
+                sleep 5
+              else
+                echo "Lock apt/dpkg libre."
+                return 0
+              fi
+            done
+            echo "Timeout: lock apt/dpkg toujours present apres 5 minutes."
+            return 1
+          }
+
+          apt_install_with_retry() {
+            local package="$1"
+            wait_for_apt_lock
+            sudo apt-get update -y
+            for attempt in 1 2 3; do
+              if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$package"; then
+                return 0
+              fi
+              echo "Echec installation $package (tentative $attempt/3). Nouvelle tentative..."
+              wait_for_apt_lock
+              sleep 5
+            done
+            echo "Impossible d'installer $package apres 3 tentatives."
+            return 1
+          }
+
           if ! command -v vagrant >/dev/null 2>&1; then
             echo "Vagrant manquant: tentative d'installation..."
-            sudo apt-get update -y
-            sudo apt-get install -y vagrant
+            apt_install_with_retry vagrant
           fi
           if ! command -v VBoxManage >/dev/null 2>&1; then
             echo "VirtualBox manquant sur le runner."
