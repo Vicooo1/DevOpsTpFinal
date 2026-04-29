@@ -1,0 +1,67 @@
+---
+# 1. Demande de stockage persistant (La contrainte du TP)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi # 1 Go d'espace disque
+
+---
+# 2. Le Déploiement de la base de données
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            # Identifiants de la BDD (à lier avec l'API plus tard)
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root_password_secret"
+            - name: MYSQL_DATABASE
+              value: "lacets_db"
+            - name: MYSQL_USER
+              value: "api_user"
+            - name: MYSQL_PASSWORD
+              value: "api_password"
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            # On monte le stockage persistant dans le dossier de données de MySQL
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+
+---
+# 3. Le Service (Réseau interne)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  # ClusterIP est le type par défaut : il rend MySQL joignable UNIQUEMENT depuis l'intérieur du cluster
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306

@@ -1,0 +1,78 @@
+---
+# 1. Le Déploiement de l'API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-lacets
+spec:
+  # On commence avec 1 seul pod (minimum requis)
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: api-lacets
+  template:
+    metadata:
+      labels:
+        app: api-lacets
+    spec:
+      containers:
+        - name: api-lacets
+          # On utilise l'image que tu as buildée et poussée à l'étape précédente
+          image: vicopetit/api-lacets:v1
+          ports:
+            - containerPort: 3000
+          # Définition des ressources pour que le HPA puisse fonctionner
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          env:
+            # Connexion à MySQL en utilisant le nom du service "mysql" défini précédemment
+            - name: DB_HOST
+              value: "mysql"
+            - name: DB_USER
+              value: "api_user"
+            - name: DB_PASS
+              value: "api_password"
+            - name: DB_NAME
+              value: "lacets_db"
+
+---
+# 2. Le Service (Réseau interne uniquement)
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-lacets
+spec:
+  # Type ClusterIP : l'API n'est pas exposée à l'extérieur (consigne du TP)
+  type: ClusterIP
+  selector:
+    app: api-lacets
+  ports:
+    - port: 80
+      targetPort: 3000
+
+---
+# 3. L'Autoscaling (HPA)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-lacets-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-lacets
+  # Contraintes du TP : min 1, max 3
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50 # Déclenche un nouveau pod si le CPU dépasse 50%

@@ -1,0 +1,35 @@
+name: CI/CD Pipeline Lacets
+
+# Déclenchement dès que la branche main est modifiée
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    # On utilise le runner self-hosted que tu viens de configurer
+    runs-on: self-hosted
+
+    steps:
+      - name: 📥 Récupérer le code source
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Configurer l'infrastructure
+        run: |
+          echo "Vérification de l'accès au cluster k3s..."
+          sudo /usr/local/bin/k3s kubectl get nodes
+
+      - name: 📦 Builder l'image
+        run: |
+          cd app
+          # On build l'image localement sur la VM
+          sudo docker build -t vicopetit/api-lacets:latest .
+
+      - name: 🚀 Déployer l'image sur l'infrastructure
+        run: |
+          # On applique les manifests Kubernetes
+          sudo /usr/local/bin/k3s kubectl apply -f k8s/mysql.yaml
+          sudo /usr/local/bin/k3s kubectl apply -f k8s/api.yaml
+          # On force le redémarrage pour que k3s prenne la nouvelle image
+          sudo /usr/local/bin/k3s kubectl rollout restart deployment api-lacets
