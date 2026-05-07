@@ -12,6 +12,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
     $PSNativeCommandUseErrorActionPreference = $true
 }
 
+
 function Write-Step {
     param([string]$Message)
     Write-Host ""
