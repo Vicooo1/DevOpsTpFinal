@@ -22,6 +22,11 @@
       wait_for:
         path: /etc/rancher/k3s/k3s.yaml
 
+    - name: Rendre le fichier k3s.yaml lisible pour l'utilisateur vagrant
+      file:
+        path: /etc/rancher/k3s/k3s.yaml
+        mode: '0644'
+
     - name: Vérifier l'état des nœuds avec kubectl
       command: k3s kubectl get node
       register: nodes_output

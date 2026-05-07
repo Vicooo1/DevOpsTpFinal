@@ -68,20 +68,20 @@ jobs:
           VBoxManage --version
           docker --version
 
-      - name: 🏗️ Configurer l'infrastructure (k3s + monitoring)
+      - name: Configurer l'infrastructure (k3s + monitoring)
         run: |
           chmod +x prep_infra/deploy_infra.sh prep_infra/generate_inventory.sh
           cd prep_infra
           ./deploy_infra.sh
           ./generate_inventory.sh
 
-      - name: 📦 Builder l'image
+      - name: Builder l'image
         run: |
           cd app
           docker build -t vicopetit/api-lacets:latest .
           docker push vicopetit/api-lacets:latest
 
-      - name: 🚀 Déployer l'application sur k3s
+      - name: Déployer l'application sur k3s
         run: |
           cd prep_infra
           vagrant ssh k3s -c "cat > /tmp/mysql.yaml" < ../k8s/mysql.yaml
@@ -92,7 +92,7 @@ jobs:
           vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl rollout status deployment/mysql --timeout=240s"
           vagrant ssh k3s -c "sudo /usr/local/bin/k3s kubectl rollout status deployment/api-lacets --timeout=240s"
 
-      - name: 📈 Vérifier observabilité
+      - name: Vérifier observabilité
         run: |
           cd prep_infra
           MON_IP=$(vagrant ssh monitoring -c "hostname -I | awk '{print \$2}'" 2>/dev/null | tr -d '\r')

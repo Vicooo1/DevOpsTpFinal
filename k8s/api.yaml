@@ -22,6 +22,20 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
+          # Vérifie si l'application est prête à recevoir du trafic
+          readinessProbe:
+            httpGet:
+              path: /api
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          # Vérifie si le conteneur doit être redémarré
+          livenessProbe:
+            httpGet:
+              path: /api
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
           # Définition des ressources pour que le HPA puisse fonctionner
           resources:
             requests:
