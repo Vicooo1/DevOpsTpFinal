@@ -5,12 +5,11 @@ on:
   push:
     branches:
       - main
+
 jobs:
   deploy:
+    # Le runner self-hosted doit avoir VirtualBox, Vagrant et Docker.
     runs-on: self-hosted
-    defaults:
-      run:
-        shell: bash  # <--- Toutes les étapes utiliseront Bash maintenant
 
     steps:
       - name: Récupérer le code source
