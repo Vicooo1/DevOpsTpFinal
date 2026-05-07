@@ -12,10 +12,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: 📥 Récupérer le code source
+      - name: Récupérer le code source
         uses: actions/checkout@v4
 
-      - name: 🧰 Vérifier dépendances runner
+      - name: Vérifier dépendances runner
         run: |
           set -e
           wait_for_apt_lock() {
